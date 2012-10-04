@@ -16,6 +16,15 @@ use TYPO3\Flow\Annotations as Flow;
 class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 
 	/**
+	 * This updates the packages repositories with some stuff helpful for working with gerrit
+	 *
+	 * This command walks through all packages and checks for 2 things:
+	 *
+	 * 1. is there a commit-msg hook to add the Change ID
+	 * 2. is there a remote target to push to gerrit
+	 *
+	 * if either of those misses it adds those.
+	 *
 	 * @return void
 	 */
 	public function updateCommand() {
