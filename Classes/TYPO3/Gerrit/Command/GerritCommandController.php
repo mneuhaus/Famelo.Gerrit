@@ -46,6 +46,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	}
 
 	public function addChangeIdCommitHook($path) {
+		system("chmod +x " . $path . "/hooks/commit-msg");
 		if (!file_exists($path . "/hooks/commit-msg")) {
 			file_put_contents($path . "/hooks/commit-msg", file_get_contents('resource://TYPO3.Gerrit/Private/Hooks/commit-msg'));
 			$this->outputLine('Added commit-msg hook to add ChangeId to: %s', array(realpath($path)));
