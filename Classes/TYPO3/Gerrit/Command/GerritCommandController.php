@@ -16,17 +16,6 @@ use TYPO3\Flow\Annotations as Flow;
 class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 
 	/**
-	 * An example command
-	 *
-	 * The comment of this command method is also used for TYPO3 Flow's help screens. The first line should give a very short
-	 * summary about what the command does. Then, after an empty line, you should explain in more detail what the command
-	 * does. You might also give some usage example.
-	 *
-	 * It is important to document the parameters with param tags, because that information will also appear in the help
-	 * screen.
-	 *
-	 * @param string $requiredArgument This argument is required
-	 * @param string $optionalArgument This argument is optional
 	 * @return void
 	 */
 	public function updateCommand() {
@@ -55,6 +44,12 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	}
 
 	public function addGerritRemote($path) {
+		$configTemplate = '
+[remote "gerrit"]
+	fetch = +refs/heads/*:refs/remotes/origin/*
+	url = git://git.typo3.org/FLOW3/Packages/{package}.git
+	push = HEAD:refs/for/master
+';
 		$config = file_get_contents($path . '/config');
 		preg_match("/url = git:\/\/git.typo3.org\/FLOW3\/Packages\/(.+).git/", $config, $matches);
 		if (count($matches) > 0 && !stristr($config, '[remote "gerrit"]')){
