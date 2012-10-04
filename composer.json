@@ -1,1 +1,1 @@
-{"name":"typo3\/gerrit","type":"typo3-flow-package","description":"","require":{"typo3\/flow":"*"},"autoload":{"psr-0":{"TYPO3\\Gerrit":"Classes"}}}
+{"name":"typo3\/gerrit","type":"typo3-flow-package","description":null,"version":null,"require":{"typo3\/flow":"*"},"autoload":{"psr-0":{"TYPO3\\Gerrit":"Classes"}}}
