@@ -82,7 +82,7 @@ From git://git.typo3.org/FLOW3/Packages/TYPO3.FLOW3
 
 # FAQ
 
-## The previous cherry-pick is now empty, possibly due to conflict resolution.
+**The previous cherry-pick is now empty, possibly due to conflict resolution.**
 
 ```
 #####################################################################################
