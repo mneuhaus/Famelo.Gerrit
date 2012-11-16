@@ -1,0 +1,162 @@
+#!/bin/bash
+# From TYPO3 CI Review 1.0 (09/21/2012)
+# original version Gerrit Code Review 2.2.2.1-3-gb2ba1a2
+#
+# Part of Gerrit Code Review (http://code.google.com/p/gerrit/)
+#
+# Copyright (coffee) 2012 TYPO3
+# Copyright (coffee) 2009 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+CHANGE_ID_AFTER=""
+COMMIT_MSG_ERROR_FOUND=0
+MSG="$1"
+ERROR_TEXT=""
+
+# Check for, and add if missing, a unique Change-Id
+#
+add_ChangeId() {
+ clean_message=`sed -e '
+  /^diff --git a\/.*/{
+   s///
+   q
+  }
+  /^Signed-off-by:/d
+  /^#/d
+ ' "$MSG" | git stripspace`
+ if test -z "$clean_message"
+ then
+  return
+ fi
+
+ if grep -i '^Change-Id:' "$MSG" >/dev/null
+ then
+  return
+ fi
+
+ id=`_gen_ChangeId`
+ perl -e '
+  $MSG = shift;
+  $id = shift;
+  $CHANGE_ID_AFTER = shift;
+
+  undef $/;
+  open(I, $MSG); $_ = <I>; close I;
+  s|^diff --git a/.*||ms;
+  s|^#.*$||mg;
+  exit unless $_;
+
+  @message = split /\n/;
+  $haveFooter = 0;
+  $startFooter = @message;
+  for($line = @message - 1; $line >= 0; $line--) {
+   $_ = $message[$line];
+
+   if (/^[a-zA-Z0-9-]+:/ && !m,^[a-z0-9-]+://,) {
+    $haveFooter++;
+    next;
+   }
+   next if /^[ []/;
+   $startFooter = $line if ($haveFooter && /^\r?$/);
+   last;
+  }
+
+  @footer = @message[$startFooter+1..@message];
+  @message = @message[0..$startFooter];
+  push(@footer, "") unless @footer;
+
+  for ($line = 0; $line < @footer; $line++) {
+   $_ = $footer[$line];
+   next if /^($CHANGE_ID_AFTER):/i;
+   last;
+  }
+  push(@footer, "Change-Id: I$id");
+
+  $_ = join("\n", @message, @footer);
+  open(O, ">$MSG"); print O; close O;
+ ' "$MSG" "$id" "$CHANGE_ID_AFTER"
+}
+_gen_ChangeIdInput() {
+ echo "tree `git write-tree`"
+ if parent=`git rev-parse HEAD^0 2>/dev/null`
+ then
+  echo "parent $parent"
+ fi
+ echo "author `git var GIT_AUTHOR_IDENT`"
+ echo "committer `git var GIT_COMMITTER_IDENT`"
+ echo
+ printf '%s' "$clean_message"
+}
+_gen_ChangeId() {
+ _gen_ChangeIdInput |
+ git hash-object -t commit --stdin
+}
+
+
+# Check for maximum line length
+#
+checkForLineLength() {
+ if egrep -q '^[^#].{74}' "$MSG"
+ then
+  COMMIT_MSG_ERROR_FOUND=1
+  ERROR_TEXT="${ERROR_TEXT}- The maximum line length of 74 characters is exceeded.\n"
+ fi
+}
+
+# Check for existance of a "Resolves: " line.
+#
+checkForResolves() {
+ if ! egrep -q '^(Resolves|Fixes): \#[0-9]+$' "$MSG"
+ then
+  COMMIT_MSG_ERROR_FOUND=1
+  ERROR_TEXT="${ERROR_TEXT}- You need at least one 'Resolves|Fixes: #<issue number>' line.\n"
+ fi
+}
+
+# Check for existance of a "Releases: " line.
+#
+checkForReleases() {
+ if ! egrep -q '^Releases: [0-9]\.[0-9](, *[0-9]\.[0-9])*$' "$MSG"
+ then
+  COMMIT_MSG_ERROR_FOUND=1
+  ERROR_TEXT="${ERROR_TEXT}- You need a 'Releases:' line. For instance: Releases: 6.0,4.7\n"
+ fi
+}
+
+# Check for existance of the commit type text
+#
+checkForCommitType() {
+ if ! egrep -q '\[[^]]+\] .+$' "$MSG"
+ then
+  COMMIT_MSG_ERROR_FOUND=1
+  ERROR_TEXT="${ERROR_TEXT}- Your first line has to contain a commit type like '[BUGFIX]'.\n"
+ fi
+}
+
+checkForLineLength
+checkForCommitType
+checkForResolves
+checkForReleases
+
+# Abort commit on message format errors
+if [ $COMMIT_MSG_ERROR_FOUND -eq 1 ]; then
+  echo -e "\n------------------------------------------------------------------"
+  echo -e "\n >> Commit aborted <<\n\nYou have errors in your commit message:"
+  echo -e $ERROR_TEXT
+  echo -e "\nPlease refer to http://wiki.typo3.org/CommitMessage_Format_(Git)\nfor details on the commit message format."
+  echo '------------------------------------------------------------------'
+fi
+
+add_ChangeId
