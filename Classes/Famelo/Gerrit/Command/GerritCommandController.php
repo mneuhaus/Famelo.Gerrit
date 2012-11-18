@@ -101,8 +101,8 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				return;
 			}
 			foreach (get_object_vars($packages) as $package => $patches) {
-				if (isset($packagePaths[$package])) {
-					echo $this->colorize('Could not load gerrit.json! Check for Syntax erros', 'red');
+				if (!isset($packagePaths[$package])) {
+					echo $this->colorize('The Package ' . $package . ' is not installed', 'red') . chr(10);
 					continue;
 				}
 				chdir($packagePaths[$package]);
