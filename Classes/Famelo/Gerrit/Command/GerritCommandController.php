@@ -107,7 +107,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				}
 				chdir($packagePaths[$package]);
 				$patches = get_object_vars($patches);
-				$commits = $this->executeShellCommand('git log -n5');
+				$commits = $this->executeShellCommand('git log -n30');
 				foreach ($patches as $description => $changeId) {
 					$change = $this->fetchChangeInformation($changeId);
 					$header = $package . ': ' . $change->subject;
