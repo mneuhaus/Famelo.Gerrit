@@ -101,6 +101,10 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				return;
 			}
 			foreach (get_object_vars($packages) as $package => $patches) {
+				if (isset($packagePaths[$package])) {
+					echo $this->colorize('Could not load gerrit.json! Check for Syntax erros', 'red');
+					continue;
+				}
 				chdir($packagePaths[$package]);
 				$patches = get_object_vars($patches);
 				$commits = explode("\n", $this->executeShellCommand('git log --format="%H" -n50'));
