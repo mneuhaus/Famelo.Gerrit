@@ -107,21 +107,21 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				}
 				chdir($packagePaths[$package]);
 				$patches = get_object_vars($patches);
-				$commits = explode("\n", $this->executeShellCommand('git log --format="%H" -n50'));
+				$commits = $this->executeShellCommand('git log -n5');
 				foreach ($patches as $description => $changeId) {
 					$change = $this->fetchChangeInformation($changeId);
-					$header = 'Fetching: ' . $change->subject;
+					$header = $package . ': ' . $change->subject;
 					echo $this->colorize($header, 'green') . chr(10);
 
 					$command = 'git fetch --quiet git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
 					$output = $this->executeShellCommand($command);
 
-					$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD^');
-					if (in_array($commit, $commits)) {
+					$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
+					if ($this->isAlreadyPicked($commit, $commits)) {
 						echo $this->colorize('Already picked', 'yellow') . chr(10);
 					} else {
 						echo $output;
-						system('git cherry-pick FETCH_HEAD');
+						system('git cherry-pick -x FETCH_HEAD');
 					}
 
 					echo chr(10);
@@ -129,6 +129,10 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				chdir(FLOW_PATH_ROOT);
 			}
 		}
+	}
+
+	public function isAlreadyPicked($commit, $commits) {
+		return stristr($commits, '(cherry picked from commit ' . $commit . ')');
 	}
 
 	public function fetchChangeInformation($changeId) {
