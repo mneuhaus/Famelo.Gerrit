@@ -96,21 +96,33 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		}
 		if (file_exists($gerritFile)) {
 			$packages = json_decode(file_get_contents($gerritFile));
+			if (!is_object($packages)) {
+				echo $this->colorize('Could not load gerrit.json! Check for Syntax erros', 'red');
+				return;
+			}
 			foreach (get_object_vars($packages) as $package => $patches) {
+				chdir($packagePaths[$package]);
 				$patches = get_object_vars($patches);
+				$commits = explode("\n", $this->executeShellCommand('git log --format="%H" -n50'));
 				foreach ($patches as $description => $changeId) {
 					$change = $this->fetchChangeInformation($changeId);
-					$header = '# Fetching: ' . $change->subject;
-					echo str_pad('', strlen($header), '#') . chr(10);
-					echo $header . chr(10);
-					echo str_pad('', strlen($header), '#') . chr(10);
+					$header = 'Fetching: ' . $change->subject;
+					echo $this->colorize($header, 'green') . chr(10);
 
-					chdir($packagePaths[$package]);
-					$command = 'git fetch git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . ' && git cherry-pick FETCH_HEAD';
-					system($command);
-					chdir(FLOW_PATH_ROOT);
+					$command = 'git fetch --quiet git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
+					$output = $this->executeShellCommand($command);
+
+					$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD^');
+					if (in_array($commit, $commits)) {
+						echo $this->colorize('Already picked', 'yellow') . chr(10);
+					} else {
+						echo $output;
+						system('git cherry-pick FETCH_HEAD');
+					}
+
 					echo chr(10);
 				}
+				chdir(FLOW_PATH_ROOT);
 			}
 		}
 	}
@@ -134,7 +146,16 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 			$output .= $line;
 		}
 		pclose($fp);
-		return $output;
+		return trim($output);
+	}
+
+	public function colorize($text, $color) {
+		$colors = array(
+			'green' => '0;32',
+			'red' => '0;31',
+			'yellow' => '0;33'
+		);
+		return sprintf("\033[%sm%s\033[0m", $colors[$color], $text);
 	}
 }
 
