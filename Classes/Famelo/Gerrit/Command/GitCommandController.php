@@ -25,6 +25,7 @@ class GitCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 * @return void
 	 */
 	public function projectCommand($package) {
+		$package = strtolower($package);
 		$packagePaths = $this->getPackagePaths();
 		if (isset($packagePaths[$package])) {
 			$packagePath = $packagePaths[$package];
@@ -54,6 +55,7 @@ class GitCommandController extends \TYPO3\Flow\Cli\CommandController {
 				foreach ($packageDirs as $packageDir) {
 					if (is_dir($typeDir . $packageDir) && substr($packageDir, 0, 1) !== '.') {
 						$packagePaths[$packageDir] = $typeDir . $packageDir;
+						$packagePaths[strtolower($packageDir)] = $typeDir . $packageDir;
 					}
 				}
 			}
