@@ -49,17 +49,13 @@ This command will now go through all defined changeIds and apply them to the Pac
 Here's the output of running the command on that gerrit.json example above:
 
 ```
-#####################################################################################
-# Fetching: [FEATURE] Allow custom custom configuration files in ConfigurationManager
-#####################################################################################
+Fetching: [FEATURE] Allow custom custom configuration files in ConfigurationManager
 From git://git.typo3.org/FLOW3/Packages/TYPO3.FLOW3
  * branch            refs/changes/82/11982/7 -> FETCH_HEAD
 [master 1992275] [FEATURE] Allow custom custom configuration files in ConfigurationManager
  3 files changed, 128 insertions(+), 32 deletions(-)
 
-####################################################
-# Fetching: [WIP][FEATURE] Improve resolving of view
-####################################################
+Fetching: [WIP][FEATURE] Improve resolving of view
 From git://git.typo3.org/FLOW3/Packages/TYPO3.FLOW3
  * branch            refs/changes/92/16392/3 -> FETCH_HEAD
 [master 71ba5a9] [WIP][FEATURE] Improve resolving of view
@@ -79,27 +75,3 @@ From git://git.typo3.org/FLOW3/Packages/TYPO3.FLOW3
  create mode 100644 Tests/Functional/Mvc/ViewsConfiguration/Fixtures/TemplateView.php
  create mode 100644 Tests/Functional/Mvc/ViewsConfiguration/ViewsConfigurationTest.php
 ```
-
-# FAQ
-
-**The previous cherry-pick is now empty, possibly due to conflict resolution.**
-
-```
-#####################################################################################
-# Fetching: [FEATURE] Allow custom custom configuration files in ConfigurationManager
-#####################################################################################
-From git://git.typo3.org/FLOW3/Packages/TYPO3.FLOW3
- * branch            refs/changes/82/11982/7 -> FETCH_HEAD
-The previous cherry-pick is now empty, possibly due to conflict resolution.
-If you wish to commit it anyway, use:
-
-    git commit --allow-empty
-
-Otherwise, please use 'git reset'
-# On branch master
-# Your branch is ahead of 'origin/master' by 2 commits.
-#
-nothing to commit (working directory clean)
-```
-
-Don't worry, if you get this error, it just means that the changeSet was already picked :)
