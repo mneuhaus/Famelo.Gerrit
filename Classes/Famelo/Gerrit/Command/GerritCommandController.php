@@ -126,7 +126,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 							echo $this->colorize('Already picked', 'yellow') . chr(10);
 						} else {
 							echo $output;
-							system('git cherry-pick -x FETCH_HEAD');
+							system('git cherry-pick -x --strategy=recursive -X theirs FETCH_HEAD');
 						}
 					}
 
