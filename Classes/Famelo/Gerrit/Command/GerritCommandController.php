@@ -113,15 +113,21 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 					$header = $package . ': ' . $change->subject;
 					echo $this->colorize($header, 'green') . chr(10);
 
-					$command = 'git fetch --quiet git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
-					$output = $this->executeShellCommand($command);
-
-					$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
-					if ($this->isAlreadyPicked($commit, $commits)) {
-						echo $this->colorize('Already picked', 'yellow') . chr(10);
+					if ($change->status == 'MERGED') {
+						echo $this->colorize('This change has been merged!', 'yellow') . chr(10);
+					} elseif ($change->status == 'ABANDONED') {
+						echo $this->colorize('This change has been abandoned!', 'red') . chr(10);
 					} else {
-						echo $output;
-						system('git cherry-pick -x FETCH_HEAD');
+						$command = 'git fetch --quiet git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
+						$output = $this->executeShellCommand($command);
+
+						$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
+						if ($this->isAlreadyPicked($commit, $commits)) {
+							echo $this->colorize('Already picked', 'yellow') . chr(10);
+						} else {
+							echo $output;
+							system('git cherry-pick -x FETCH_HEAD');
+						}
 					}
 
 					echo chr(10);
