@@ -1,0 +1,4 @@
+Famelo:
+  Gerrit:
+    gerrit:
+      host: 'git.typo3.org'
