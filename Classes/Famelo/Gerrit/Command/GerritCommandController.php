@@ -16,6 +16,19 @@ use TYPO3\Flow\Annotations as Flow;
 class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 
 	/**
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * @param array $settings
+	 * @return void
+	 */
+	public function injectSettings(array $settings) {
+		$this->settings = $settings;
+	}
+
+	/**
 	 * This setups the packages repositories with some stuff helpful for working with gerrit
 	 *
 	 * This command walks through all packages and checks for 2 things:
@@ -118,7 +131,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 					} elseif ($change->status == 'ABANDONED') {
 						echo $this->colorize('This change has been abandoned!', 'red') . chr(10);
 					} else {
-						$command = 'git fetch --quiet git://git.typo3.org/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
+						$command = 'git fetch --quiet git://' . $this->settings['gerrit']['host'] . '/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
 						$output = $this->executeShellCommand($command);
 
 						$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
