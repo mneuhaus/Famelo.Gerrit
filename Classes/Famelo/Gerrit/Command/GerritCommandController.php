@@ -18,6 +18,15 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	/**
 	 * @var array
 	 */
+	protected $colors = array(
+		'green' => '0;32',
+		'red' => '0;31',
+		'yellow' => '0;33'
+	);
+
+	/**
+	 * @var array
+	 */
 	protected $settings;
 
 	/**
@@ -44,14 +53,18 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		$this->processPackages(FLOW_PATH_PACKAGES);
 	}
 
+	/**
+	 * @param string $basePath
+	 * @return void
+	 */
 	public function processPackages($basePath) {
 		$paths = scandir($basePath);
 		foreach ($paths as $path) {
-			if ($path == '.' || $path == '..') {
+			if ($path === '.' || $path === '..') {
 				continue;
 			}
 
-			if ($path == '.git') {
+			if ($path === '.git') {
 				$this->addGerritRemote($basePath . '/' . $path);
 				$this->addChangeIdCommitHook($basePath . '/' . $path);
 			} elseif (is_dir($basePath . '/' . $path)) {
@@ -60,6 +73,10 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		}
 	}
 
+	/**
+	 * @param string $path
+	 * @return void
+	 */
 	public function addChangeIdCommitHook($path) {
 		if (!file_exists($path . '/hooks/commit-msg')) {
 			file_put_contents($path . '/hooks/commit-msg', file_get_contents('resource://Famelo.Gerrit/Private/Hooks/commit-msg'));
@@ -68,6 +85,10 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		system('chmod +x ' . $path . '/hooks/commit-msg');
 	}
 
+	/**
+	 * @param string $path
+	 * @return void
+	 */
 	public function addGerritRemote($path) {
 		$configTemplate = '
 [remote "gerrit"]
@@ -88,14 +109,14 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	/**
 	 * This command checks for a gerrit.json in the current dir and fetches patches from gerrit
 	 *
-	 * This command will cherrypick all reviews specified in gerrit.json
+	 * This command will cherry-pick all reviews specified in gerrit.json
 	 *
 	 * @return void
 	 */
 	public function updateCommand() {
 		$gerritFile = FLOW_PATH_ROOT . 'gerrit.json';
 		$typeDirs = scandir(FLOW_PATH_PACKAGES);
-		$packagePaths = array();
+		$packagePaths = array('BuildEssentials' => 'Build/BuildEssentials');
 		foreach ($typeDirs as $typeDir) {
 			if (is_dir(FLOW_PATH_PACKAGES . $typeDir) && substr($typeDir, 0, 1) !== '.') {
 				$typeDir = FLOW_PATH_PACKAGES . $typeDir . '/';
@@ -110,12 +131,12 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		if (file_exists($gerritFile)) {
 			$packages = json_decode(file_get_contents($gerritFile));
 			if (!is_object($packages)) {
-				echo $this->colorize('Could not load gerrit.json! Check for Syntax erros', 'red');
+				echo $this->colorize('Could not load gerrit.json! Check for Syntax errors', 'red');
 				return;
 			}
 			foreach (get_object_vars($packages) as $package => $patches) {
 				if (!isset($packagePaths[$package])) {
-					echo $this->colorize('The Package ' . $package . ' is not installed', 'red') . chr(10);
+					echo $this->colorize('The Package ' . $package . ' is not installed', 'red') . PHP_EOL;
 					continue;
 				}
 				chdir($packagePaths[$package]);
@@ -124,36 +145,45 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 				foreach ($patches as $description => $changeId) {
 					$change = $this->fetchChangeInformation($changeId);
 					$header = $package . ': ' . $change->subject;
-					echo $this->colorize($header, 'green') . chr(10);
+					echo $this->colorize($header, 'green') . PHP_EOL;
 
 					if ($change->status == 'MERGED') {
-						echo $this->colorize('This change has been merged!', 'yellow') . chr(10);
+						echo $this->colorize('This change has been merged!', 'yellow') . PHP_EOL;
 					} elseif ($change->status == 'ABANDONED') {
-						echo $this->colorize('This change has been abandoned!', 'red') . chr(10);
+						echo $this->colorize('This change has been abandoned!', 'red') . PHP_EOL;
 					} else {
 						$command = 'git fetch --quiet git://' . $this->settings['gerrit']['host'] . '/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
 						$output = $this->executeShellCommand($command);
 
 						$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
 						if ($this->isAlreadyPicked($commit, $commits)) {
-							echo $this->colorize('Already picked', 'yellow') . chr(10);
+							echo $this->colorize('Already picked', 'yellow') . PHP_EOL;
 						} else {
 							echo $output;
 							system('git cherry-pick -x --strategy=recursive -X theirs FETCH_HEAD');
 						}
 					}
 
-					echo chr(10);
+					echo PHP_EOL;
 				}
 				chdir(FLOW_PATH_ROOT);
 			}
 		}
 	}
 
+	/**
+	 * @param string $commit
+	 * @param string $commits
+	 * @return boolean
+	 */
 	public function isAlreadyPicked($commit, $commits) {
-		return stristr($commits, '(cherry picked from commit ' . $commit . ')');
+		return stristr($commits, '(cherry picked from commit ' . $commit . ')') !== FALSE;
 	}
 
+	/**
+	 * @param integer $changeId The numeric change id, not the hash
+	 * @return mixed
+	 */
 	public function fetchChangeInformation($changeId) {
 		$command = 'ssh review.typo3.org -- "gerrit query --current-patch-set --format JSON change:' . $changeId . '"';
 
@@ -166,6 +196,10 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		return $data;
 	}
 
+	/**
+	 * @param string $command
+	 * @return string
+	 */
 	public function executeShellCommand($command) {
 		$output = '';
 		$fp = popen($command, 'r');
@@ -176,13 +210,13 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		return trim($output);
 	}
 
+	/**
+	 * @param string $text
+	 * @param string $color Allowed values: green, red, yellow
+	 * @return string
+	 */
 	public function colorize($text, $color) {
-		$colors = array(
-			'green' => '0;32',
-			'red' => '0;31',
-			'yellow' => '0;33'
-		);
-		return sprintf("\033[%sm%s\033[0m", $colors[$color], $text);
+		return sprintf("\033[%sm%s\033[0m", $this->colors[$color], $text);
 	}
 }
 
