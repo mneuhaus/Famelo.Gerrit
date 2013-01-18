@@ -2,3 +2,4 @@ Famelo:
   Gerrit:
     gerrit:
       host: 'git.typo3.org'
+      apiEndpoint: 'https://review.typo3.org/'

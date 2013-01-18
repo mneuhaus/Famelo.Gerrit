@@ -152,7 +152,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 					} elseif ($change->status == 'ABANDONED') {
 						echo $this->colorize('This change has been abandoned!', 'red') . PHP_EOL;
 					} else {
-						$command = 'git fetch --quiet git://' . $this->settings['gerrit']['host'] . '/' . $change->project . ' ' . $change->currentPatchSet->ref . '';
+						$command = 'git fetch --quiet git://' . $this->settings['gerrit']['host'] . '/' . $change->project . ' ' . $change->revisions->{$change->current_revision}->fetch->git->ref . '';
 						$output = $this->executeShellCommand($command);
 
 						$commit = $this->executeShellCommand('git log --format="%H" -n1 FETCH_HEAD');
@@ -185,12 +185,13 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 * @return mixed
 	 */
 	public function fetchChangeInformation($changeId) {
-		$command = 'ssh review.typo3.org -- "gerrit query --current-patch-set --format JSON change:' . $changeId . '"';
+		$output = file_get_contents($this->settings['gerrit']['apiEndpoint'] . 'changes/?format=JSON_COMPACT&q=' . intval($changeId) . '&o=CURRENT_REVISION');
 
-		$output = $this->executeShellCommand($command);
-
-		$parts = explode('{"type":"stats"', $output);
-		$output = $parts[0];
+			// Remove first line
+		$output = substr($output, strpos($output, "\n") + 1);
+			// trim []
+		$output = ltrim($output, '[');
+		$output = rtrim(rtrim($output), ']');
 
 		$data = json_decode($output);
 		return $data;
