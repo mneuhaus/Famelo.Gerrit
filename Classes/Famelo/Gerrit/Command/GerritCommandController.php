@@ -65,7 +65,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 			}
 
 			if ($path === '.git') {
-				$this->x($basePath . '/' . $path);
+				$this->addGerritRemote($basePath . '/' . $path);
 				$this->addChangeIdCommitHook($basePath . '/' . $path);
 			} elseif (is_dir($basePath . '/' . $path)) {
 				$this->processPackages($basePath . '/' . $path);
