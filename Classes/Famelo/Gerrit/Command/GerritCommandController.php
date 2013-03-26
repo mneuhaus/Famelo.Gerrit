@@ -54,6 +54,38 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	}
 
 	/**
+	 * This setups the packages repositories with some stuff helpful for working with gerrit
+	 *
+	 * This command walks through all packages and checks for 2 things:
+	 *
+	 * 1. is there a commit-msg hook to add the Change ID
+	 * 2. is there a remote target to push to gerrit
+	 *
+	 * if either of those misses it adds those.
+	 *
+	 * @param string $topic
+	 * @return void
+	 */
+	public function addTopicCommand($topic, $basePath = NULL) {
+		if ($basePath === NULL) {
+			$basePath = FLOW_PATH_PACKAGES;
+		}
+		$paths = scandir($basePath);
+		foreach ($paths as $path) {
+			if ($path === '.' || $path === '..') {
+				continue;
+			}
+
+			if ($path === '.git') {
+				var_dump($path, $topic);
+				$this->addGerritTopicRemote($basePath . '/' . $path, $topic);
+			} elseif (is_dir($basePath . '/' . $path)) {
+				$this->addTopicCommand($topic, $basePath . '/' . $path);
+			}
+		}
+	}
+
+	/**
 	 * @param string $basePath
 	 * @return void
 	 */
@@ -99,6 +131,28 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 		$config = file_get_contents($path . '/config');
 		preg_match('/url = git:\/\/git.typo3.org\/FLOW3\/Packages\/(.+).git/', $config, $matches);
 		if (count($matches) > 0 && !stristr($config, '[remote "gerrit"]')) {
+			$config .= str_replace('{package}', $matches[1], $configTemplate);
+			file_put_contents($path . '/config', $config);
+			$this->outputLine('Added gerrit remote to repository: %s', array(realpath($path)));
+		}
+	}
+
+	/**
+	 * @param string $path
+	 * @param string $topic
+	 * @return void
+	 */
+	public function addGerritTopicRemote($path, $topic) {
+		$identifier = 'gerrit/' . $topic;
+		$configTemplate = '
+[remote "' . $identifier . '"]
+	fetch = +refs/heads/*:refs/remotes/origin/*
+	url = git://git.typo3.org/FLOW3/Packages/{package}.git
+	push = HEAD:refs/for/master/' . $topic . '
+';
+		$config = file_get_contents($path . '/config');
+		preg_match('/url = git:\/\/git.typo3.org\/FLOW3\/Packages\/(.+).git/', $config, $matches);
+		if (count($matches) > 0 && !stristr($config, '[remote "' . $identifier . '"]')) {
 			$config .= str_replace('{package}', $matches[1], $configTemplate);
 			file_put_contents($path . '/config', $config);
 			$this->outputLine('Added gerrit remote to repository: %s', array(realpath($path)));
