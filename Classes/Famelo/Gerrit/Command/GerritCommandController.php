@@ -77,7 +77,6 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 			}
 
 			if ($path === '.git') {
-				var_dump($path, $topic);
 				$this->addGerritTopicRemote($basePath . '/' . $path, $topic);
 			} elseif (is_dir($basePath . '/' . $path)) {
 				$this->addTopicCommand($topic, $basePath . '/' . $path);
