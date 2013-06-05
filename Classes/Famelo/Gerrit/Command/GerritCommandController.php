@@ -238,7 +238,7 @@ class GerritCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 * @return mixed
 	 */
 	public function fetchChangeInformation($changeId) {
-		$output = file_get_contents($this->settings['gerrit']['apiEndpoint'] . 'changes/?format=JSON_COMPACT&q=' . intval($changeId) . '&o=CURRENT_REVISION');
+		$output = file_get_contents($this->settings['gerrit']['apiEndpoint'] . 'changes/?q=' . intval($changeId) . '&o=CURRENT_REVISION');
 
 			// Remove first line
 		$output = substr($output, strpos($output, "\n") + 1);
